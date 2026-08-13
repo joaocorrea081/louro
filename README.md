@@ -51,8 +51,19 @@ qualquer, e não se incomoda com isso.
 |---|---|---|
 | Custo | nada | US$ 0,003 a 0,006 por minuto, direto com eles |
 | Chave | não precisa | a sua |
+| Pontuação e maiúsculas | não põe | põe sozinho |
 | Acerta jargão em inglês | erra às vezes | bem melhor |
 | Áudio vai para | Google | OpenAI |
+
+A mesma frase, ditada nos dois:
+
+```
+Chrome   o pássaro voa até a montanha com emoção e gratidão
+OpenAI   O pássaro voou até a montanha com emoção e gratidão.
+```
+
+A pontuação costuma pesar mais que a precisão no dia a dia: com o Chrome você
+dita e depois volta pra pôr as vírgulas e os pontos.
 
 Abra a configuração com `louro config`: dá pra trocar o motor, colar a chave da
 OpenAI e escolher o idioma. **A chave fica só na sua máquina**, num arquivo que
