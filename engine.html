@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Motor de ditado</title>
+<style>
+  html, body {
+    margin: 0; height: 100%;
+    background: #1e1e2e; color: #cdd6f4;
+    font: 13px/1.5 system-ui, sans-serif;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; user-select: none;
+  }
+  #state { font-size: 1.1rem; font-weight: 600; }
+  #detail { opacity: 0.6; margin-top: 6px; padding: 0 12px; word-break: break-word; }
+</style>
+</head>
+<body>
+  <div id="state">iniciando…</div>
+  <div id="detail"></div>
+
+<script>
+/*
+ * Motor de reconhecimento de fala. Roda numa janela escondida do Chrome — a
+ * interface visivel e o overlay em GTK. Quem manda aqui e o bridge, por SSE:
+ * este arquivo nao tem botao nem atalho proprio.
+ */
+const stateEl = document.getElementById('state');
+const detailEl = document.getElementById('detail');
+
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+let shouldRecord = false;   // o usuario quer estar gravando agora?
+let recognition = null;
+let finalText = '';         // acumulado durante o ciclo inteiro, atravessa reinicios
+let restarts = 0;
+
+function report(message, level = 'info') {
+  detailEl.textContent = message;
+  fetch('/log', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, level }),
+  }).catch(() => {});
+}
+
+function sendText(text) {
+  fetch('/type', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text }),
+  }).catch((err) => report(`falha ao enviar texto: ${err.message}`, 'error'));
+}
+
+function startRecognition() {
+  recognition = new SpeechRecognition();
+  recognition.lang = 'pt-BR';
+  recognition.continuous = true;
+  recognition.interimResults = false;
+
+  recognition.onresult = (ev) => {
+    for (let i = ev.resultIndex; i < ev.results.length; i++) {
+      if (ev.results[i].isFinal) finalText += ev.results[i][0].transcript;
+    }
+    if (finalText) report(`ouvido: ${finalText}`);
+  };
+
+  // Erros que nao adianta tentar de novo: sem eles o onend reiniciaria em loop
+  // apertado, enchendo o log e martelando o microfone.
+  const FATAL = {
+    'not-allowed': 'permissao de microfone negada',
+    'service-not-allowed': 'servico de fala bloqueado',
+    'audio-capture': 'nenhum microfone disponivel',
+  };
+
+  recognition.onerror = (ev) => {
+    // 'no-speech' e 'aborted' sao rotina: o motor corta sozinho no silencio e
+    // o onend logo abaixo reinicia.
+    if (ev.error === 'no-speech' || ev.error === 'aborted') return;
+    if (FATAL[ev.error]) {
+      shouldRecord = false;
+      report(`${FATAL[ev.error]} (${ev.error})`, 'error');
+      return;
+    }
+    report(`erro de reconhecimento: ${ev.error}`, 'error');
+  };
+
+  recognition.onend = () => {
+    recognition = null;
+    if (!shouldRecord) {
+      finishCycle();
+      return;
+    }
+    // O Chrome encerra a sessao sozinho depois de um tanto de silencio. Como o
+    // usuario ainda nao mandou parar, reabre e segue acumulando no mesmo texto.
+    restarts++;
+    if (restarts > 60) {
+      report('reinicios demais — desistindo do ciclo', 'error');
+      shouldRecord = false;
+      finishCycle();
+      return;
+    }
+    setTimeout(() => { if (shouldRecord) startRecognition(); }, 120);
+  };
+
+  try {
+    recognition.start();
+    stateEl.textContent = 'ouvindo';
+  } catch (err) {
+    report(`nao consegui iniciar: ${err.message}`, 'error');
+  }
+}
+
+function finishCycle() {
+  stateEl.textContent = 'parado';
+  const text = finalText.trim();
+  finalText = '';
+  restarts = 0;
+  sendText(text);
+  if (text) report(`enviado: ${text}`);
+  else report('ciclo terminou sem texto');
+}
+
+function onStart() {
+  if (shouldRecord) return;
+  finalText = '';
+  restarts = 0;
+  shouldRecord = true;
+  startRecognition();
+}
+
+function onStop() {
+  if (!shouldRecord) return;
+  shouldRecord = false;
+  stateEl.textContent = 'finalizando…';
+  if (recognition) {
+    recognition.stop();   // dispara onend -> finishCycle
+  } else {
+    finishCycle();
+  }
+}
+
+if (!SpeechRecognition) {
+  stateEl.textContent = 'sem Web Speech API';
+  report('navegador sem suporte a reconhecimento de fala', 'error');
+} else {
+  const events = new EventSource('/events?client=page');
+  events.addEventListener('start', onStart);
+  events.addEventListener('stop', onStop);
+  events.onopen = () => {
+    stateEl.textContent = 'parado';
+    report('motor de fala pronto');
+  };
+  events.onerror = () => { stateEl.textContent = 'sem conexao com a ponte'; };
+}
+</script>
+</body>
+</html>

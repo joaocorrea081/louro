@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Louro — atalho pros servicos do ditado por voz.
+#
+#   ponte   (node bridge.js)  coordena tudo e cola o texto no app em foco
+#   motor   (Chrome)          reconhecimento de fala, janela escondida pelo KWin
+#   bolinha (python)          o indicador que aparece enquanto voce fala
+#
+# Quem supervisiona de verdade e o systemd --user: se qualquer peca cair, ela
+# volta sozinha. Este script so evita ter que digitar tres systemctl.
+
+set -uo pipefail
+
+UNITS=(louro-bridge louro-overlay louro-engine)
+PORT="${LOURO_PORT:-8765}"
+URL="http://127.0.0.1:$PORT"
+
+case "${1:-status}" in
+  start)   systemctl --user start "${UNITS[@]}" && echo "louro: no ar" ;;
+  stop)    systemctl --user stop "${UNITS[@]}" && echo "louro: calado" ;;
+  restart) systemctl --user restart "${UNITS[@]}" && echo "louro: reiniciado" ;;
+
+  enable)
+    systemctl --user enable "${UNITS[@]}" >/dev/null 2>&1
+    echo "louro: vai subir sozinho no login"
+    ;;
+  disable)
+    systemctl --user disable "${UNITS[@]}" >/dev/null 2>&1
+    echo "louro: nao sobe mais no login"
+    ;;
+
+  status)
+    for unit in "${UNITS[@]}"; do
+      printf "  %-16s %s\n" "${unit#louro-}" "$(systemctl --user is-active "$unit")"
+    done
+    printf "  %-16s " "estado"
+    curl -sf -m 2 "$URL/state" 2>/dev/null || echo "(ponte fora do ar)"
+    echo
+    ;;
+
+  logs)
+    journalctl --user -u louro-bridge -n "${2:-30}" --no-pager -o cat
+    ;;
+
+  *)
+    cat >&2 <<EOF
+uso: louro <comando>
+
+  start | stop | restart   liga, desliga, reinicia
+  status                   mostra se as tres pecas estao de pe
+  logs [n]                 ultimas linhas (o que foi ouvido e colado)
+  enable | disable         subir ou nao no login
+EOF
+    exit 1
+    ;;
+esac
