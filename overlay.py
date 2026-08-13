@@ -33,7 +33,20 @@ COLOR_IDLE = (0.27, 0.28, 0.35)
 COLOR_REC = (0.65, 0.89, 0.63)
 COLOR_ERR = (0.95, 0.55, 0.66)
 
-state = {"name": "idle", "error": False, "phase": 0.0}
+# level  = volume que a pagina acabou de medir (0..1)
+# smooth = o mesmo valor amortecido, pra bolinha nao tremer entre quadros
+# last_level_at = quando chegou o ultimo nivel; se parar de chegar, e sinal de
+#                 que o microfone nao esta entregando audio (nao e so silencio)
+state = {
+    "name": "idle",
+    "error": False,
+    "level": 0.0,
+    "smooth": 0.0,
+    "last_level_at": 0.0,
+}
+
+# tempo gravando sem nenhuma medicao chegando antes de acusar problema
+SILENCE_ALERT_S = 5.0
 
 
 class Overlay(Gtk.Window):
@@ -70,19 +83,23 @@ class Overlay(Gtk.Window):
 
         cx = cy = SIZE / 2
         recording = state["name"] == "recording"
+        deaf = recording and not receiving_audio()
 
-        if state["error"]:
+        if state["error"] or deaf:
             color = COLOR_ERR
         elif recording:
             color = COLOR_REC
         else:
             color = COLOR_IDLE
 
-        # halo pulsante enquanto grava, pra deixar obvio que esta ouvindo
+        # O halo acompanha o volume da voz: parado significa que nada esta
+        # entrando no microfone. Antes ele pulsava sozinho, o que dava a falsa
+        # impressao de estar captando mesmo com o microfone mudo.
         if recording:
-            pulse = (math.sin(state["phase"]) + 1) / 2
-            cr.set_source_rgba(*color, 0.18 + 0.22 * pulse)
-            cr.arc(cx, cy, (SIZE / 2) - 1 - 4 * (1 - pulse), 0, 2 * math.pi)
+            level = state["smooth"]
+            base = SIZE / 2 - 9
+            cr.set_source_rgba(*color, 0.15 + 0.35 * level)
+            cr.arc(cx, cy, base + 8 * level, 0, 2 * math.pi)
             cr.fill()
 
         cr.set_source_rgba(*color, 0.95)
@@ -102,10 +119,19 @@ class Overlay(Gtk.Window):
         return False
 
 
+def receiving_audio():
+    """As medicoes de volume ainda estao chegando da pagina?"""
+    return (time.monotonic() - state["last_level_at"]) < SILENCE_ALERT_S
+
+
 def animate(win):
-    if state["name"] == "recording":
-        state["phase"] += 0.18
-        win.area.queue_draw()
+    if state["name"] != "recording":
+        return True
+    # Sobe rapido e desce devagar: acompanha a fala sem tremer entre quadros.
+    target = state["level"] if receiving_audio() else 0.0
+    rate = 0.5 if target > state["smooth"] else 0.12
+    state["smooth"] += (target - state["smooth"]) * rate
+    win.area.queue_draw()
     return True
 
 
@@ -113,6 +139,10 @@ def apply_state(win, name, error=False):
     state["name"] = name
     state["error"] = error
     if name == "recording":
+        # comeca do zero e da um tempo antes de acusar falta de audio
+        state["level"] = 0.0
+        state["smooth"] = 0.0
+        state["last_level_at"] = time.monotonic()
         win.show_all()
     else:
         # some assim que a gravacao para, antes de o texto ser colado
@@ -139,6 +169,12 @@ def listen(win):
                             except json.JSONDecodeError:
                                 name = "idle"
                             GLib.idle_add(apply_state, win, name)
+                        elif event == "level":
+                            try:
+                                state["level"] = float(json.loads(payload)["level"])
+                                state["last_level_at"] = time.monotonic()
+                            except (json.JSONDecodeError, KeyError, TypeError, ValueError):
+                                pass
                         elif event == "error":
                             GLib.idle_add(apply_state, win, "recording", True)
                             GLib.timeout_add(1200, apply_state, win, "idle")

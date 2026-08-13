@@ -264,6 +264,19 @@ const server = http.createServer((req, res) => {
       handleType(req, res);
       return;
 
+    // Nivel do microfone, ~10x por segundo enquanto grava. Vai direto pro
+    // overlay, que usa isso pra bolinha reagir a voz de verdade. Nao responde
+    // corpo nenhum: chega por sendBeacon e ninguem espera resposta.
+    case 'POST /level':
+      readJson(req, (body) => {
+        if (state === 'recording' && typeof body.level === 'number') {
+          broadcast('level', { level: body.level });
+        }
+        res.writeHead(204);
+        res.end();
+      });
+      return;
+
     // a janela do Chrome fica escondida, entao o diagnostico dela sai por aqui
     case 'POST /log':
       readJson(req, (body) => {

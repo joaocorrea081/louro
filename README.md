@@ -148,6 +148,11 @@ a janela do Louro, não o seu Chrome pessoal. As flags
 `--disable-background-timer-throttling` impedem o Chrome de suspender a página
 por estar minimizada; sem elas o reconhecimento morre em segundo plano.
 
+**A bolinha reage à sua voz**: o halo cresce conforme o volume que está entrando
+no microfone. Isso não é enfeite — é como você descobre que o microfone está
+mudo ou no dispositivo errado. Bolinha parada enquanto você fala significa que
+nada está sendo captado; se ela ficar vermelha, o áudio parou de chegar.
+
 **Ditados longos**: o Chrome encerra a sessão de reconhecimento sozinho depois de
 um tanto de silêncio. A página reabre e continua acumulando no mesmo texto, então
 falar com pausas não corta a frase.

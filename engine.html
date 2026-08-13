@@ -36,6 +36,50 @@ let recognition = null;
 let finalText = '';         // acumulado durante o ciclo inteiro, atravessa reinicios
 let restarts = 0;
 
+// --- medicao do volume do microfone ------------------------------------
+// O reconhecimento do Chrome nao expoe o nivel do audio, entao abrimos um
+// stream proprio so pra medir. E o que faz a bolinha reagir a voz de verdade
+// em vez de piscar sozinha — sem isso nao da pra saber se o microfone pegou.
+let audioContext = null;
+let audioStream = null;
+let levelTimer = null;
+
+async function startLevelMeter() {
+  if (audioContext) return;
+  try {
+    audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioContext = new AudioContext();
+    const source = audioContext.createMediaStreamSource(audioStream);
+    const analyser = audioContext.createAnalyser();
+    analyser.fftSize = 512;
+    analyser.smoothingTimeConstant = 0.3;
+    source.connect(analyser);
+
+    const samples = new Float32Array(analyser.fftSize);
+    levelTimer = setInterval(() => {
+      analyser.getFloatTimeDomainData(samples);
+      let sum = 0;
+      for (const sample of samples) sum += sample * sample;
+      const rms = Math.sqrt(sum / samples.length);
+      // fala normal fica perto de 0.02-0.15 em RMS; normaliza pra 0..1 numa
+      // curva que da pra enxergar (raiz, senao quase tudo vira "quietinho")
+      const level = Math.min(1, Math.sqrt(rms / 0.25));
+      navigator.sendBeacon('/level', JSON.stringify({ level }));
+    }, 100);
+  } catch (err) {
+    report(`nao consegui medir o nivel do audio: ${err.message}`, 'error');
+  }
+}
+
+function stopLevelMeter() {
+  if (levelTimer) clearInterval(levelTimer);
+  levelTimer = null;
+  if (audioStream) audioStream.getTracks().forEach((t) => t.stop());
+  audioStream = null;
+  if (audioContext) audioContext.close();
+  audioContext = null;
+}
+
 function report(message, level = 'info') {
   detailEl.textContent = message;
   fetch('/log', {
@@ -127,12 +171,14 @@ function onStart() {
   finalText = '';
   restarts = 0;
   shouldRecord = true;
+  startLevelMeter();
   startRecognition();
 }
 
 function onStop() {
   if (!shouldRecord) return;
   shouldRecord = false;
+  stopLevelMeter();
   stateEl.textContent = 'finalizando…';
   if (recognition) {
     recognition.stop();   // dispara onend -> finishCycle
