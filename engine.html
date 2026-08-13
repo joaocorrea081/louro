@@ -36,6 +36,16 @@ let recognition = null;
 let finalText = '';         // acumulado durante o ciclo inteiro, atravessa reinicios
 let restarts = 0;
 
+// Config vem do bridge por SSE e pode mudar no meio do caminho (painel aberto
+// em outra aba), entao e sempre lida na hora de comecar a gravar.
+let config = { engine: 'chrome', language: 'pt-BR' };
+
+// --- gravacao pra OpenAI ------------------------------------------------
+// No modo OpenAI quem reconhece nao e o navegador: aqui so gravamos o audio e
+// entregamos os bytes pro bridge, que fala com a API (a chave nunca vem pra ca).
+let recorder = null;
+let recordedChunks = [];
+
 // --- medicao do volume do microfone ------------------------------------
 // O reconhecimento do Chrome nao expoe o nivel do audio, entao abrimos um
 // stream proprio so pra medir. E o que faz a bolinha reagir a voz de verdade
@@ -98,8 +108,13 @@ function sendText(text) {
 }
 
 function startRecognition() {
+  if (!SpeechRecognition) {
+    report('este navegador nao reconhece fala; escolha o motor OpenAI', 'error');
+    shouldRecord = false;
+    return;
+  }
   recognition = new SpeechRecognition();
-  recognition.lang = 'pt-BR';
+  recognition.lang = config.language || 'pt-BR';
   recognition.continuous = true;
   recognition.interimResults = false;
 
@@ -166,13 +181,58 @@ function finishCycle() {
   else report('ciclo terminou sem texto');
 }
 
+async function startRecorder() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    recordedChunks = [];
+    recorder = new MediaRecorder(stream);
+    recorder.ondataavailable = (ev) => {
+      if (ev.data.size > 0) recordedChunks.push(ev.data);
+    };
+    recorder.onstop = () => {
+      stream.getTracks().forEach((t) => t.stop());
+      sendAudio();
+      recorder = null;
+    };
+    recorder.start();
+    stateEl.textContent = 'gravando (OpenAI)';
+  } catch (err) {
+    report(`nao consegui gravar: ${err.message}`, 'error');
+    shouldRecord = false;
+  }
+}
+
+function sendAudio() {
+  const blob = new Blob(recordedChunks, { type: recordedChunks[0]?.type || 'audio/webm' });
+  recordedChunks = [];
+  stateEl.textContent = 'parado';
+
+  if (blob.size < 1000) {
+    report('gravacao curta demais — nada pra transcrever');
+    fetch('/type', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: '' }),
+    }).catch(() => {});
+    return;
+  }
+
+  report(`mandando ${Math.round(blob.size / 1024)} KB pra OpenAI`);
+  fetch('/transcribe', { method: 'POST', headers: { 'Content-Type': blob.type }, body: blob })
+    .catch((err) => report(`falha ao enviar audio: ${err.message}`, 'error'));
+}
+
 function onStart() {
   if (shouldRecord) return;
   finalText = '';
   restarts = 0;
   shouldRecord = true;
   startLevelMeter();
-  startRecognition();
+  if (config.engine === 'openai') {
+    startRecorder();
+  } else {
+    startRecognition();
+  }
 }
 
 function onStop() {
@@ -180,6 +240,16 @@ function onStop() {
   shouldRecord = false;
   stopLevelMeter();
   stateEl.textContent = 'finalizando…';
+
+  if (config.engine === 'openai') {
+    if (recorder && recorder.state !== 'inactive') {
+      recorder.stop();   // dispara onstop -> sendAudio
+    } else {
+      sendAudio();
+    }
+    return;
+  }
+
   if (recognition) {
     recognition.stop();   // dispara onend -> finishCycle
   } else {
@@ -187,19 +257,23 @@ function onStop() {
   }
 }
 
-if (!SpeechRecognition) {
-  stateEl.textContent = 'sem Web Speech API';
-  report('navegador sem suporte a reconhecimento de fala', 'error');
-} else {
-  const events = new EventSource('/events?client=page');
-  events.addEventListener('start', onStart);
-  events.addEventListener('stop', onStop);
-  events.onopen = () => {
-    stateEl.textContent = 'parado';
-    report('motor de fala pronto');
-  };
-  events.onerror = () => { stateEl.textContent = 'sem conexao com a ponte'; };
-}
+const events = new EventSource('/events?client=page');
+events.addEventListener('start', onStart);
+events.addEventListener('stop', onStop);
+events.addEventListener('config', (ev) => {
+  try {
+    config = JSON.parse(ev.data);
+  } catch { /* mantem a config anterior */ }
+});
+events.onopen = () => {
+  stateEl.textContent = 'parado';
+  if (!SpeechRecognition) {
+    report('este navegador nao tem Web Speech API — so o motor OpenAI funciona', 'error');
+  } else {
+    report('motor pronto');
+  }
+};
+events.onerror = () => { stateEl.textContent = 'sem conexao com a ponte'; };
 </script>
 </body>
 </html>

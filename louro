@@ -41,12 +41,22 @@ case "${1:-status}" in
     journalctl --user -u louro-bridge -n "${2:-30}" --no-pager -o cat
     ;;
 
+  config)
+    if ! curl -sf -m 2 "$URL/state" >/dev/null 2>&1; then
+      echo "louro: precisa estar no ar pra abrir a configuracao (louro start)" >&2
+      exit 1
+    fi
+    echo "abrindo $URL/config"
+    xdg-open "$URL/config" >/dev/null 2>&1 &
+    ;;
+
   *)
     cat >&2 <<EOF
 uso: louro <comando>
 
   start | stop | restart   liga, desliga, reinicia
   status                   mostra se as tres pecas estao de pe
+  config                   abre a configuracao no navegador
   logs [n]                 ultimas linhas (o que foi ouvido e colado)
   enable | disable         subir ou nao no login
 EOF

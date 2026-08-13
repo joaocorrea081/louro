@@ -45,6 +45,23 @@ bons e resolvem esse caso.
 O Louro é pra quem quer ditar de graça, sem limite de tempo, em máquina
 qualquer, e não se incomoda com isso.
 
+## Dois motores, você escolhe
+
+| | Chrome (padrão) | OpenAI |
+|---|---|---|
+| Custo | nada | US$ 0,003 a 0,006 por minuto, direto com eles |
+| Chave | não precisa | a sua |
+| Acerta jargão em inglês | erra às vezes | bem melhor |
+| Áudio vai para | Google | OpenAI |
+
+Abra a configuração com `louro config`: dá pra trocar o motor, colar a chave da
+OpenAI e escolher o idioma. **A chave fica só na sua máquina**, num arquivo que
+só você lê (`~/.config/louro/config.json`, permissão 600) — quem conversa com a
+OpenAI é o serviço local, então ela nunca é entregue ao navegador.
+
+Ditar uma hora inteira no modelo mais caro sai por volta de US$ 0,36. Para uso
+normal, some no fim do mês.
+
 ## Instalação
 
 Precisa de **KDE Plasma 6 no Wayland** e do **Google Chrome** (o Chromium não
@@ -93,6 +110,7 @@ Depois de instalado, sobe sozinho no login. Não tem interface pra abrir: é o
 atalho e a bolinha.
 
 ```bash
+louro config     # abre a configuração no navegador
 louro status     # as três peças estão de pé?
 louro logs       # o que foi ouvido e colado
 louro restart
@@ -111,6 +129,11 @@ Três peças pequenas:
 | ponte | `bridge.js` | servidor local (porta 8765): coordena o ciclo e cola o texto |
 | motor | Chrome | reconhece a fala numa janela escondida; a página é `engine.html` |
 | bolinha | `overlay.py` | o indicador visual enquanto você fala |
+| painel | `config.html` | a configuração, servida pela própria ponte |
+
+No modo OpenAI o Chrome deixa de reconhecer e passa só a gravar: a página
+manda os bytes do áudio para a ponte, que faz o upload para a API. É por isso
+que a chave nunca precisa existir dentro do navegador.
 
 ```
 Ctrl+Space -> POST /toggle -> SSE "start" -> Chrome ouve + bolinha aparece

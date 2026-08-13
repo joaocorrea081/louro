@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Louro — configuração</title>
+<style>
+  :root {
+    --fundo: #1e1e2e;
+    --caixa: #313244;
+    --borda: #45475a;
+    --texto: #cdd6f4;
+    --fraco: #a6adc8;
+    --verde: #a6e3a1;
+    --rosa: #f38ba8;
+    --azul: #89b4fa;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 32px 20px 64px;
+    background: var(--fundo); color: var(--texto);
+    font: 15px/1.6 system-ui, -apple-system, sans-serif;
+  }
+  main { max-width: 620px; margin: 0 auto; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  .sub { color: var(--fraco); margin: 0 0 28px; }
+  fieldset {
+    border: 1px solid var(--borda); border-radius: 10px;
+    padding: 18px 20px; margin: 0 0 20px;
+  }
+  legend { padding: 0 8px; font-weight: 600; }
+  label.opt {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 12px; border: 1px solid transparent; border-radius: 8px;
+    cursor: pointer; margin-bottom: 6px;
+  }
+  label.opt:hover { background: var(--caixa); }
+  label.opt input { margin-top: 4px; flex-shrink: 0; }
+  label.opt.sel { border-color: var(--verde); background: var(--caixa); }
+  .titulo { font-weight: 600; }
+  .desc { color: var(--fraco); font-size: 0.87rem; }
+  .campo { margin-top: 14px; }
+  .campo > span { display: block; margin-bottom: 6px; font-size: 0.9rem; }
+  input[type=password], input[type=text], select {
+    width: 100%; padding: 10px 12px;
+    background: var(--fundo); color: var(--texto);
+    border: 1px solid var(--borda); border-radius: 8px;
+    font: inherit; font-size: 0.95rem;
+  }
+  input:focus, select:focus { outline: 2px solid var(--azul); outline-offset: -1px; }
+  #openai[hidden] { display: none; }
+  button {
+    padding: 11px 22px; border: none; border-radius: 8px;
+    background: var(--verde); color: #1e1e2e;
+    font: inherit; font-weight: 600; cursor: pointer;
+  }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .linha { display: flex; align-items: center; gap: 14px; }
+  #aviso { font-size: 0.9rem; }
+  #aviso.erro { color: var(--rosa); }
+  #aviso.ok { color: var(--verde); }
+  .nota {
+    margin-top: 8px; font-size: 0.85rem; color: var(--fraco);
+    border-left: 2px solid var(--borda); padding-left: 12px;
+  }
+  a { color: var(--azul); }
+  code {
+    background: var(--caixa); padding: 1px 6px; border-radius: 4px;
+    font-size: 0.85em;
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>Louro</h1>
+  <p class="sub">Ditado por voz. Configuração salva em <code>~/.config/louro/config.json</code>.</p>
+
+  <form id="form">
+    <fieldset>
+      <legend>Quem transcreve</legend>
+
+      <label class="opt" id="opt-chrome">
+        <input type="radio" name="engine" value="chrome">
+        <span>
+          <span class="titulo">Chrome — de graça</span><br>
+          <span class="desc">
+            O reconhecimento do navegador, o mesmo do ditado do Google Docs.
+            Sem custo e sem limite de tempo. O áudio vai para os servidores do
+            Google.
+          </span>
+        </span>
+      </label>
+
+      <label class="opt" id="opt-openai">
+        <input type="radio" name="engine" value="openai">
+        <span>
+          <span class="titulo">OpenAI — com a sua chave</span><br>
+          <span class="desc">
+            Acerta mais em nome próprio e termo técnico em inglês. Você paga
+            por minuto direto para a OpenAI. O áudio vai para os servidores
+            deles.
+          </span>
+        </span>
+      </label>
+    </fieldset>
+
+    <fieldset id="openai" hidden>
+      <legend>OpenAI</legend>
+
+      <label class="campo">
+        <span>Sua chave da API</span>
+        <input type="password" id="apiKey" placeholder="sk-..." autocomplete="off"
+               spellcheck="false">
+      </label>
+      <p class="nota">
+        A chave fica só na sua máquina, em arquivo que só você lê, e é usada
+        pelo serviço local — nunca é enviada para o navegador. Pegue a sua em
+        <a href="https://platform.openai.com/api-keys" target="_blank"
+           rel="noopener">platform.openai.com/api-keys</a>.
+      </p>
+
+      <label class="campo">
+        <span>Modelo</span>
+        <select id="openaiModel">
+          <option value="gpt-4o-transcribe">gpt-4o-transcribe — mais preciso (US$ 0,006/min)</option>
+          <option value="gpt-4o-mini-transcribe">gpt-4o-mini-transcribe — mais barato (US$ 0,003/min)</option>
+          <option value="whisper-1">whisper-1 — o antigo (US$ 0,006/min)</option>
+        </select>
+      </label>
+      <p class="nota">
+        Ditar por uma hora inteira custa cerca de US$ 0,36 no modelo mais
+        preciso. O envio tem limite de 25 MB por gravação.
+      </p>
+    </fieldset>
+
+    <fieldset>
+      <legend>Idioma</legend>
+      <label class="campo">
+        <span>Idioma da fala</span>
+        <select id="language">
+          <option value="pt-BR">Português (Brasil)</option>
+          <option value="pt-PT">Português (Portugal)</option>
+          <option value="en-US">Inglês (EUA)</option>
+          <option value="es-ES">Espanhol</option>
+          <option value="fr-FR">Francês</option>
+          <option value="de-DE">Alemão</option>
+          <option value="it-IT">Italiano</option>
+          <option value="ja-JP">Japonês</option>
+        </select>
+      </label>
+    </fieldset>
+
+    <div class="linha">
+      <button type="submit" id="salvar">Salvar</button>
+      <span id="aviso"></span>
+    </div>
+  </form>
+
+  <p class="nota" style="margin-top:28px">
+    O atalho é do sistema, não daqui: Configurações do Sistema → Atalhos →
+    Atalhos Personalizados → “Louro”. Depois de salvar, a mudança vale já na
+    próxima gravação.
+  </p>
+</main>
+
+<script>
+const form = document.getElementById('form');
+const painelOpenai = document.getElementById('openai');
+const aviso = document.getElementById('aviso');
+const apiKey = document.getElementById('apiKey');
+
+// A chave nunca chega aqui — o servidor só conta se existe uma guardada. O
+// campo fica com um marcador e, se o usuario nao mexer, nao mandamos nada e a
+// chave salva continua intacta.
+const MARCADOR = '••••••••••••••••';
+let tinhaChave = false;
+
+function marcarSelecionado() {
+  const motor = form.engine.value;
+  document.getElementById('opt-chrome').classList.toggle('sel', motor === 'chrome');
+  document.getElementById('opt-openai').classList.toggle('sel', motor === 'openai');
+  painelOpenai.hidden = motor !== 'openai';
+}
+
+async function carregar() {
+  const cfg = await (await fetch('/api/config')).json();
+  form.engine.value = cfg.engine;
+  document.getElementById('language').value = cfg.language;
+  document.getElementById('openaiModel').value = cfg.openaiModel;
+  tinhaChave = cfg.hasOpenaiKey;
+  if (tinhaChave) apiKey.value = MARCADOR;
+  marcarSelecionado();
+}
+
+form.addEventListener('change', marcarSelecionado);
+
+form.addEventListener('submit', async (ev) => {
+  ev.preventDefault();
+  const motor = form.engine.value;
+  const corpo = {
+    engine: motor,
+    language: document.getElementById('language').value,
+    openaiModel: document.getElementById('openaiModel').value,
+  };
+
+  // so manda a chave se o usuario digitou algo diferente do marcador
+  if (!(tinhaChave && apiKey.value === MARCADOR)) {
+    corpo.openaiApiKey = apiKey.value;
+  }
+
+  if (motor === 'openai' && !corpo.openaiApiKey && !tinhaChave) {
+    aviso.textContent = 'a OpenAI precisa de uma chave';
+    aviso.className = 'erro';
+    return;
+  }
+
+  aviso.textContent = 'salvando…';
+  aviso.className = '';
+  try {
+    const res = await fetch('/api/config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(corpo),
+    });
+    if (!res.ok) throw new Error(`o serviço respondeu ${res.status}`);
+    const cfg = await res.json();
+    tinhaChave = cfg.hasOpenaiKey;
+    if (tinhaChave) apiKey.value = MARCADOR;
+    aviso.textContent = 'salvo';
+    aviso.className = 'ok';
+    setTimeout(() => { aviso.textContent = ''; }, 2500);
+  } catch (err) {
+    aviso.textContent = `não deu pra salvar: ${err.message}`;
+    aviso.className = 'erro';
+  }
+});
+
+carregar().catch(() => {
+  aviso.textContent = 'o Louro não está rodando — tente: louro start';
+  aviso.className = 'erro';
+});
+</script>
+</body>
+</html>

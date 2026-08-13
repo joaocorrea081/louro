@@ -21,6 +21,7 @@
 
 const http = require('http');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const { spawn, execFile } = require('child_process');
 
@@ -47,8 +48,54 @@ const PASTE_KEYS = [
 // margem pro wl-copy realmente assumir o clipboard antes de mandar a tecla
 const CLIPBOARD_SETTLE_MS = 150;
 
-// se a pagina nao devolver texto nesse prazo apos o stop, destrava o estado
-const STOP_TIMEOUT_MS = 8000;
+// Se a pagina nao devolver nada nesse prazo apos o stop, destrava o estado.
+// Pelo Chrome o texto ja esta pronto; pela OpenAI ainda falta subir o audio e
+// esperar a resposta, entao o prazo e bem maior.
+const STOP_TIMEOUT_CHROME_MS = 8000;
+const STOP_TIMEOUT_OPENAI_MS = 75000;
+
+// --- configuracao do usuario ---------------------------------------------
+const CONFIG_DIR = path.join(os.homedir(), '.config', 'louro');
+const CONFIG_PATH = path.join(CONFIG_DIR, 'config.json');
+
+const DEFAULT_CONFIG = {
+  engine: 'chrome',                 // 'chrome' (gratis) | 'openai' (chave sua)
+  language: 'pt-BR',
+  openaiModel: 'gpt-4o-transcribe',
+  openaiApiKey: '',
+};
+
+const OPENAI_URL = 'https://api.openai.com/v1/audio/transcriptions';
+const OPENAI_TIMEOUT_MS = 60000;
+// limite de upload da API; audio de ditado nem chega perto, mas melhor avisar
+// antes de mandar do que receber um 413 sem explicacao
+const OPENAI_MAX_BYTES = 25 * 1024 * 1024;
+
+let config = { ...DEFAULT_CONFIG };
+
+function loadConfig() {
+  try {
+    const saved = JSON.parse(fs.readFileSync(CONFIG_PATH, 'utf8'));
+    config = { ...DEFAULT_CONFIG, ...saved };
+  } catch (err) {
+    if (err.code !== 'ENOENT') log('ERRO lendo config:', err.message);
+    config = { ...DEFAULT_CONFIG };
+  }
+}
+
+function saveConfig(patch) {
+  config = { ...config, ...patch };
+  fs.mkdirSync(CONFIG_DIR, { recursive: true });
+  // guarda a chave da OpenAI, entao ninguem alem do dono le
+  fs.writeFileSync(CONFIG_PATH, JSON.stringify(config, null, 2), { mode: 0o600 });
+  fs.chmodSync(CONFIG_PATH, 0o600);
+}
+
+/** Config sem segredo, do jeito que pode ir pro navegador. */
+function publicConfig() {
+  const { openaiApiKey, ...rest } = config;
+  return { ...rest, hasOpenaiKey: Boolean(openaiApiKey) };
+}
 
 let state = 'idle'; // 'idle' | 'recording' | 'stopping'
 let stopTimer = null;
@@ -129,6 +176,89 @@ function pasteText(text) {
   }
 }
 
+/**
+ * Manda o audio pra OpenAI e devolve o texto.
+ *
+ * A chave nunca sai daqui: a pagina grava o audio e entrega os bytes, quem
+ * fala com a API e o servidor. Assim a chave nao aparece em nada que rode
+ * dentro do navegador.
+ */
+async function transcribeWithOpenAI(audio, mimeType) {
+  if (!config.openaiApiKey) throw new Error('nenhuma chave da OpenAI configurada');
+  if (audio.length > OPENAI_MAX_BYTES) {
+    throw new Error('audio maior que o limite de 25 MB da OpenAI');
+  }
+
+  const extension = mimeType.includes('ogg') ? 'ogg' : 'webm';
+  const form = new FormData();
+  form.append('file', new Blob([audio], { type: mimeType }), `audio.${extension}`);
+  form.append('model', config.openaiModel);
+  // a API espera ISO-639-1 ("pt"), nao a etiqueta completa ("pt-BR")
+  form.append('language', config.language.split('-')[0]);
+
+  const response = await fetch(OPENAI_URL, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${config.openaiApiKey}` },
+    body: form,
+    signal: AbortSignal.timeout(OPENAI_TIMEOUT_MS),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => '');
+    let message = `OpenAI respondeu ${response.status}`;
+    try {
+      const parsed = JSON.parse(detail);
+      if (parsed.error?.message) message += `: ${parsed.error.message}`;
+    } catch {
+      if (detail) message += `: ${detail.slice(0, 200)}`;
+    }
+    throw new Error(message);
+  }
+
+  const result = await response.json();
+  return (result.text || '').trim();
+}
+
+function handleTranscribe(req, res) {
+  const chunks = [];
+  let size = 0;
+
+  req.on('data', (chunk) => {
+    size += chunk.length;
+    if (size > OPENAI_MAX_BYTES) {
+      req.destroy();
+      return;
+    }
+    chunks.push(chunk);
+  });
+
+  req.on('end', async () => {
+    clearStopTimer();
+    const mimeType = req.headers['content-type'] || 'audio/webm';
+    const audio = Buffer.concat(chunks);
+    log(`audio recebido (${Math.round(audio.length / 1024)} KB), mandando pra OpenAI`);
+
+    try {
+      const text = await transcribeWithOpenAI(audio, mimeType);
+      if (text) {
+        log(`texto da OpenAI: "${text}"`);
+        pasteText(text);
+      } else {
+        log('OpenAI nao entendeu nada (silencio?)');
+      }
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true, chars: text.length }));
+    } catch (err) {
+      log('ERRO OpenAI:', err.message);
+      broadcast('error', { message: err.message });
+      res.writeHead(502, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: err.message }));
+    } finally {
+      setState('idle');
+    }
+  });
+}
+
 function clearStopTimer() {
   if (stopTimer) {
     clearTimeout(stopTimer);
@@ -161,14 +291,30 @@ function handleToggle(res) {
     setState('stopping');
     broadcast('stop');
     clearStopTimer();
+    const limit =
+      config.engine === 'openai' ? STOP_TIMEOUT_OPENAI_MS : STOP_TIMEOUT_CHROME_MS;
     stopTimer = setTimeout(() => {
-      log('ERRO pagina nao devolveu texto a tempo — destravando');
+      log('ERRO nada voltou a tempo — destravando');
+      broadcast('error', { message: 'a transcricao demorou demais' });
       setState('idle');
-    }, STOP_TIMEOUT_MS);
+    }, limit);
   }
 
   res.writeHead(200, { 'Content-Type': 'application/json' });
   res.end(JSON.stringify({ state }));
+}
+
+function serveFile(res, filePath, contentType) {
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      log('ERRO lendo', filePath, err.message);
+      res.writeHead(500);
+      res.end('erro lendo ' + path.basename(filePath));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': contentType });
+    res.end(data);
+  });
 }
 
 /** Le um corpo JSON e entrega o objeto (ou {} se vier quebrado). */
@@ -215,6 +361,8 @@ function handleEvents(req, res, url) {
   });
   res.write('retry: 1000\n\n');
   res.write(`event: state\ndata: ${JSON.stringify({ state })}\n\n`);
+  // a pagina precisa saber qual motor usar antes da primeira gravacao
+  res.write(`event: config\ndata: ${JSON.stringify(publicConfig())}\n\n`);
 
   const client = { res, kind };
   clients.add(client);
@@ -241,15 +389,7 @@ const server = http.createServer((req, res) => {
 
   switch (route) {
     case 'GET /':
-      fs.readFile(HTML_PATH, (err, data) => {
-        if (err) {
-          res.writeHead(500);
-          res.end('erro lendo dictation.html');
-          return;
-        }
-        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-        res.end(data);
-      });
+      serveFile(res, HTML_PATH, 'text/html; charset=utf-8');
       return;
 
     case 'GET /events':
@@ -287,11 +427,52 @@ const server = http.createServer((req, res) => {
       });
       return;
 
+    case 'POST /transcribe':
+      handleTranscribe(req, res);
+      return;
+
+    case 'GET /config':
+      serveFile(res, path.join(__dirname, 'config.html'), 'text/html; charset=utf-8');
+      return;
+
+    case 'GET /api/config':
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(publicConfig()));
+      return;
+
+    case 'POST /api/config':
+      readJson(req, (body) => {
+        const patch = {};
+        if (body.engine === 'chrome' || body.engine === 'openai') patch.engine = body.engine;
+        if (typeof body.language === 'string' && body.language) patch.language = body.language;
+        if (typeof body.openaiModel === 'string' && body.openaiModel) {
+          patch.openaiModel = body.openaiModel;
+        }
+        // string vazia apaga a chave; ausente mantem a que ja estava
+        if (typeof body.openaiApiKey === 'string') patch.openaiApiKey = body.openaiApiKey.trim();
+
+        try {
+          saveConfig(patch);
+        } catch (err) {
+          log('ERRO salvando config:', err.message);
+          res.writeHead(500, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: err.message }));
+          return;
+        }
+
+        log(`config salva (motor: ${config.engine}, idioma: ${config.language})`);
+        broadcast('config', publicConfig());
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(publicConfig()));
+      });
+      return;
+
     case 'GET /state':
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(
         JSON.stringify({
           state,
+          engine: config.engine,
           pageConnected: hasClient('page'),
           overlayConnected: hasClient('overlay'),
         })
@@ -304,6 +485,8 @@ const server = http.createServer((req, res) => {
   }
 });
 
+loadConfig();
+
 server.listen(PORT, HOST, () => {
-  log(`ponte de ditado no ar em http://${HOST}:${PORT}`);
+  log(`Louro no ar em http://${HOST}:${PORT} (motor: ${config.engine})`);
 });
