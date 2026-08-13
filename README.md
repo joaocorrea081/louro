@@ -49,7 +49,7 @@ qualquer, e não se incomoda com isso.
 
 | | Chrome (padrão) | OpenAI |
 |---|---|---|
-| Custo | nada | US$ 0,003 a 0,006 por minuto, direto com eles |
+| Custo | nada | a partir de US$ 0,003 por minuto, direto com eles |
 | Chave | não precisa | a sua |
 | Pontuação e maiúsculas | não põe | põe sozinho |
 | Acerta jargão em inglês | erra às vezes | bem melhor |
@@ -64,6 +64,15 @@ OpenAI   O pássaro voou até a montanha com emoção e gratidão.
 
 A pontuação costuma pesar mais que a precisão no dia a dia: com o Chrome você
 dita e depois volta pra pôr as vírgulas e os pontos.
+
+Modelos disponíveis no painel, do mais recomendado ao mais antigo:
+
+| Modelo | Custo/min | Observação |
+|---|---|---|
+| `gpt-transcribe` | US$ 0,0045 | o mais novo (jul/2026) e o padrão daqui |
+| `gpt-4o-mini-transcribe` | US$ 0,003 | o mais barato |
+| `gpt-4o-transcribe` | US$ 0,006 | geração anterior |
+| `whisper-1` | US$ 0,006 | o antigo, erra bem mais |
 
 Abra a configuração com `louro config`: dá pra trocar o motor, colar a chave da
 OpenAI e escolher o idioma. **A chave fica só na sua máquina**, num arquivo que

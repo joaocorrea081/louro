@@ -61,7 +61,9 @@ const CONFIG_PATH = path.join(CONFIG_DIR, 'config.json');
 const DEFAULT_CONFIG = {
   engine: 'chrome',                 // 'chrome' (gratis) | 'openai' (chave sua)
   language: 'pt-BR',
-  openaiModel: 'gpt-4o-transcribe',
+  // gpt-transcribe (jul/2026) e o mais novo: mais barato que o gpt-4o-transcribe
+  // e com metade do erro do whisper-1
+  openaiModel: 'gpt-transcribe',
   openaiApiKey: '',
 };
 
