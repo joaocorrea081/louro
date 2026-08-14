@@ -106,6 +106,17 @@ function publicConfig() {
 let state = 'idle'; // 'idle' | 'recording' | 'stopping'
 let stopTimer = null;
 
+// Ultimos ditados, so na memoria — some quando o servico reinicia e nunca vai
+// pro disco. Serve pro painel mostrar o que foi entendido sem precisar do
+// journal, e pra descobrir quais palavras merecem entrar no vocabulario.
+const HISTORY_LIMIT = 20;
+const history = [];
+
+function remember(text) {
+  history.unshift({ text, at: new Date().toISOString() });
+  if (history.length > HISTORY_LIMIT) history.pop();
+}
+
 /** Clientes SSE conectados, por tipo. */
 const clients = new Set();
 
@@ -266,6 +277,7 @@ function handleTranscribe(req, res) {
       const text = await transcribeWithOpenAI(audio, mimeType);
       if (text) {
         log(`texto da OpenAI: "${text}"`);
+        remember(text);
         pasteText(text);
       } else {
         log('OpenAI nao entendeu nada (silencio?)');
@@ -365,6 +377,7 @@ function handleType(req, res) {
 
     if (text) {
       log(`texto recebido: "${text}"`);
+      remember(text);
       pasteText(text);
     } else {
       log('nada reconhecido (silencio ou fala nao entendida)');
@@ -473,6 +486,11 @@ const server = http.createServer((req, res) => {
 
     case 'GET /config':
       serveFile(res, path.join(__dirname, 'config.html'), 'text/html; charset=utf-8');
+      return;
+
+    case 'GET /api/history':
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ history }));
       return;
 
     case 'GET /api/config':

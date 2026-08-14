@@ -130,12 +130,17 @@ Depois de instalado, sobe sozinho no login. Não tem interface pra abrir: é o
 atalho e a bolinha.
 
 ```bash
-louro config     # abre a configuração no navegador
+louro            # abre o painel — é onde se faz tudo
 louro status     # as três peças estão de pé?
 louro logs       # o que foi ouvido e colado
 louro restart
 louro disable    # parar de subir no login
 ```
+
+Digitar `louro` sozinho abre o painel de propósito: é um programa que você usa
+por atalho, então não faz sentido ter que decorar subcomando pra mexer nele. O
+painel mostra se está tudo de pé e os últimos ditados — dá pra ver ali quais
+palavras ele erra sempre e acrescentar no vocabulário.
 
 **Trocar o atalho depois de instalado**: Configurações do Sistema → Atalhos →
 Atalhos Personalizados → "Louro". Ou rode o `install.sh --atalho` de novo.

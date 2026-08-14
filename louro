@@ -14,7 +14,9 @@ UNITS=(louro-bridge louro-overlay louro-engine)
 PORT="${LOURO_PORT:-8765}"
 URL="http://127.0.0.1:$PORT"
 
-case "${1:-status}" in
+# Sem argumento abre o painel: e de onde da pra fazer tudo sem precisar
+# decorar subcomando.
+case "${1:-config}" in
   start)   systemctl --user start "${UNITS[@]}" && echo "louro: no ar" ;;
   stop)    systemctl --user stop "${UNITS[@]}" && echo "louro: calado" ;;
   restart) systemctl --user restart "${UNITS[@]}" && echo "louro: reiniciado" ;;

@@ -68,12 +68,36 @@
     background: var(--caixa); padding: 1px 6px; border-radius: 4px;
     font-size: 0.85em;
   }
+  .saude {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; margin-bottom: 22px;
+    background: var(--caixa); border-radius: 8px; font-size: 0.9rem;
+  }
+  .ponto {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--fraco); flex-shrink: 0;
+  }
+  .ponto.ok { background: var(--verde); }
+  .ponto.ruim { background: var(--rosa); }
+  .hist { list-style: none; margin: 12px 0 0; padding: 0; }
+  .hist li {
+    padding: 8px 0; border-bottom: 1px solid var(--borda);
+    font-size: 0.9rem; word-break: break-word;
+  }
+  .hist li:last-child { border-bottom: none; }
+  .hist .vazio { color: var(--fraco); font-style: italic; }
+  .hist .hora { color: var(--fraco); font-size: 0.8rem; margin-right: 8px; }
 </style>
 </head>
 <body>
 <main>
   <h1>Louro</h1>
   <p class="sub">Ditado por voz. Configuração salva em <code>~/.config/louro/config.json</code>.</p>
+
+  <div id="saude" class="saude">
+    <span id="bolinha" class="ponto"></span>
+    <span id="saude-texto">verificando…</span>
+  </div>
 
   <form id="form">
     <fieldset>
@@ -172,7 +196,16 @@
     </div>
   </form>
 
-  <p class="nota" style="margin-top:28px">
+  <fieldset style="margin-top:28px">
+    <legend>Últimos ditados</legend>
+    <p class="nota" style="margin-top:0">
+      O que o Louro entendeu desde que foi ligado. Serve pra achar as palavras
+      que ele erra sempre e acrescentar no campo de vocabulário aí em cima.
+    </p>
+    <ul id="historico" class="hist"><li class="vazio">nada ainda</li></ul>
+  </fieldset>
+
+  <p class="nota">
     O atalho é do sistema, não daqui: Configurações do Sistema → Atalhos →
     Atalhos Personalizados → “Louro”. Depois de salvar, a mudança vale já na
     próxima gravação.
@@ -257,6 +290,48 @@ carregar().catch(() => {
   aviso.textContent = 'o Louro não está rodando — tente: louro start';
   aviso.className = 'erro';
 });
+
+// --- saude e historico, atualizados sozinhos ---------------------------
+const bolinha = document.getElementById('bolinha');
+const saudeTexto = document.getElementById('saude-texto');
+const historico = document.getElementById('historico');
+
+function descreverEstado(s) {
+  if (s.state === 'recording') return 'gravando agora — pode falar';
+  if (s.state === 'stopping') return 'transcrevendo…';
+  if (!s.pageConnected) return 'o motor de fala não respondeu';
+  return s.engine === 'openai'
+    ? 'tudo certo — pronto pra ditar (OpenAI)'
+    : 'tudo certo — pronto pra ditar (Chrome, de graça)';
+}
+
+async function atualizar() {
+  try {
+    const s = await (await fetch('/state')).json();
+    const saudavel = s.pageConnected;
+    bolinha.className = 'ponto ' + (saudavel ? 'ok' : 'ruim');
+    saudeTexto.textContent = descreverEstado(s);
+
+    const { history } = await (await fetch('/api/history')).json();
+    if (!history.length) {
+      historico.innerHTML = '<li class="vazio">nada ainda — aperte o atalho e fale</li>';
+      return;
+    }
+    historico.innerHTML = history
+      .map((item) => {
+        const hora = new Date(item.at).toLocaleTimeString('pt-BR');
+        const texto = item.text.replace(/[<&]/g, (c) => (c === '<' ? '&lt;' : '&amp;'));
+        return `<li><span class="hora">${hora}</span>${texto}</li>`;
+      })
+      .join('');
+  } catch {
+    bolinha.className = 'ponto ruim';
+    saudeTexto.textContent = 'o Louro não está rodando';
+  }
+}
+
+atualizar();
+setInterval(atualizar, 3000);
 </script>
 </body>
 </html>
