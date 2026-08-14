@@ -134,6 +134,19 @@
         whisper. Uma hora inteira de ditado sai por volta de US$ 0,27. O envio
         tem limite de 25 MB por gravação.
       </p>
+
+      <label class="campo">
+        <span>Palavras que você usa e o ditado erra</span>
+        <input type="text" id="vocabulary"
+               placeholder="Claude Code, Supabase, Cloudflare, Pix"
+               autocomplete="off" spellcheck="false">
+      </label>
+      <p class="nota">
+        Nomes de marca, projeto e jargão que o modelo não conhece — ele tenta
+        adivinhar pelo som e erra (“Claude Code” vira “Cloudcode”). Liste aqui,
+        separados por vírgula, e passam a ser grafias esperadas. Trocar de
+        modelo não resolve isso; isto resolve.
+      </p>
     </fieldset>
 
     <fieldset>
@@ -190,6 +203,7 @@ async function carregar() {
   form.engine.value = cfg.engine;
   document.getElementById('language').value = cfg.language;
   document.getElementById('openaiModel').value = cfg.openaiModel;
+  document.getElementById('vocabulary').value = cfg.vocabulary || '';
   tinhaChave = cfg.hasOpenaiKey;
   if (tinhaChave) apiKey.value = MARCADOR;
   marcarSelecionado();
@@ -204,6 +218,7 @@ form.addEventListener('submit', async (ev) => {
     engine: motor,
     language: document.getElementById('language').value,
     openaiModel: document.getElementById('openaiModel').value,
+    vocabulary: document.getElementById('vocabulary').value,
   };
 
   // so manda a chave se o usuario digitou algo diferente do marcador

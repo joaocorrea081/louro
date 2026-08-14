@@ -65,6 +65,10 @@ const DEFAULT_CONFIG = {
   // e com metade do erro do whisper-1
   openaiModel: 'gpt-transcribe',
   openaiApiKey: '',
+  // Nomes que o modelo nao conhece e erra sempre (marcas, projetos, jargao).
+  // Vao como dica de contexto pra API — trocar de modelo nao resolve isso:
+  // medido, os tres erram "Claude Code" igual.
+  vocabulary: '',
 };
 
 const OPENAI_URL = 'https://api.openai.com/v1/audio/transcriptions';
@@ -191,12 +195,26 @@ async function transcribeWithOpenAI(audio, mimeType) {
     throw new Error('audio maior que o limite de 25 MB da OpenAI');
   }
 
-  const extension = mimeType.includes('ogg') ? 'ogg' : 'webm';
+  // A OpenAI decide o formato pela extensao do nome enviado, entao ela precisa
+  // bater com o conteudo — um WAV chamado .webm volta como "arquivo corrompido".
+  const EXTENSIONS = {
+    webm: 'webm', ogg: 'ogg', wav: 'wav', mpeg: 'mp3',
+    mp3: 'mp3', mp4: 'mp4', m4a: 'm4a', flac: 'flac',
+  };
+  const subtype = (mimeType.split('/')[1] || '').split(';')[0].trim();
+  const extension = EXTENSIONS[subtype] || 'webm';
+
   const form = new FormData();
   form.append('file', new Blob([audio], { type: mimeType }), `audio.${extension}`);
   form.append('model', config.openaiModel);
   // a API espera ISO-639-1 ("pt"), nao a etiqueta completa ("pt-BR")
   form.append('language', config.language.split('-')[0]);
+  // O 'prompt' e tratado como contexto do que vem a seguir, entao os nomes
+  // proprios do usuario passam a ser grafias esperadas em vez de palavras
+  // desconhecidas que o modelo tenta adivinhar pelo som.
+  if (config.vocabulary.trim()) {
+    form.append('prompt', config.vocabulary.trim());
+  }
 
   const response = await fetch(OPENAI_URL, {
     method: 'POST',
@@ -221,7 +239,8 @@ async function transcribeWithOpenAI(audio, mimeType) {
   return (result.text || '').trim();
 }
 
-function handleTranscribe(req, res) {
+/** Junta o corpo binario da requisicao e entrega como Buffer. */
+function collectBody(req, done) {
   const chunks = [];
   let size = 0;
 
@@ -234,10 +253,13 @@ function handleTranscribe(req, res) {
     chunks.push(chunk);
   });
 
-  req.on('end', async () => {
+  req.on('end', () => done(Buffer.concat(chunks)));
+}
+
+function handleTranscribe(req, res) {
+  collectBody(req, async (audio) => {
     clearStopTimer();
     const mimeType = req.headers['content-type'] || 'audio/webm';
-    const audio = Buffer.concat(chunks);
     log(`audio recebido (${Math.round(audio.length / 1024)} KB), mandando pra OpenAI`);
 
     try {
@@ -433,6 +455,22 @@ const server = http.createServer((req, res) => {
       handleTranscribe(req, res);
       return;
 
+    // Transcreve e devolve o texto SEM colar em lugar nenhum. Serve pra
+    // conferir se a chave e o vocabulario estao funcionando sem despejar
+    // texto no que voce estiver fazendo.
+    case 'POST /test-transcribe':
+      collectBody(req, async (audio) => {
+        try {
+          const text = await transcribeWithOpenAI(audio, req.headers['content-type'] || 'audio/wav');
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ text, model: config.openaiModel }));
+        } catch (err) {
+          res.writeHead(502, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: err.message }));
+        }
+      });
+      return;
+
     case 'GET /config':
       serveFile(res, path.join(__dirname, 'config.html'), 'text/html; charset=utf-8');
       return;
@@ -450,6 +488,7 @@ const server = http.createServer((req, res) => {
         if (typeof body.openaiModel === 'string' && body.openaiModel) {
           patch.openaiModel = body.openaiModel;
         }
+        if (typeof body.vocabulary === 'string') patch.vocabulary = body.vocabulary;
         // string vazia apaga a chave; ausente mantem a que ja estava
         if (typeof body.openaiApiKey === 'string') patch.openaiApiKey = body.openaiApiKey.trim();
 
