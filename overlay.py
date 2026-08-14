@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Louro — a bolinha de gravacao, unica parte visivel do ditado.
+"""Louro — a bolinha de gravação, única parte visível do ditado.
 
 Usa gtk-layer-shell na camada OVERLAY com KeyboardMode.NONE: fica acima de
-todas as janelas e nunca aceita foco de teclado. Isso e o que faz o esquema
-inteiro funcionar — o terminal jamais perde o foco, entao quando a gravacao
-termina o texto vai pro lugar certo sem precisar devolver foco a ninguem.
+todas as janelas e nunca aceita foco de teclado. Isso é o que faz o esquema
+inteiro funcionar: o terminal jamais perde o foco, então quando a gravação
+termina o texto vai pro lugar certo sem precisar devolver foco a ninguém.
 
 Aparece enquanto o estado for 'recording' e some em qualquer outro.
 """
@@ -28,15 +28,15 @@ BASE = f"http://127.0.0.1:{PORT}"
 SIZE = 60
 MARGIN_BOTTOM = 90
 
-# catppuccin mocha, mesmo tom que a pagina ja usava
+# catppuccin mocha, mesmo tom que a página já usava
 COLOR_IDLE = (0.27, 0.28, 0.35)
 COLOR_REC = (0.65, 0.89, 0.63)
 COLOR_ERR = (0.95, 0.55, 0.66)
 
-# level  = volume que a pagina acabou de medir (0..1)
-# smooth = o mesmo valor amortecido, pra bolinha nao tremer entre quadros
-# last_level_at = quando chegou o ultimo nivel; se parar de chegar, e sinal de
-#                 que o microfone nao esta entregando audio (nao e so silencio)
+# level  = volume que a página acabou de medir (0..1)
+# smooth = o mesmo valor amortecido, pra bolinha não tremer entre quadros
+# last_level_at = quando chegou o último nível; se parar de chegar, e sinal de
+#                 que o microfone não esta entregando áudio (não e só silêncio)
 state = {
     "name": "idle",
     "error": False,
@@ -45,7 +45,7 @@ state = {
     "last_level_at": 0.0,
 }
 
-# tempo gravando sem nenhuma medicao chegando antes de acusar problema
+# tempo gravando sem nenhuma medição chegando antes de acusar problema
 SILENCE_ALERT_S = 5.0
 
 
@@ -106,7 +106,7 @@ class Overlay(Gtk.Window):
         cr.arc(cx, cy, SIZE / 2 - 9, 0, 2 * math.pi)
         cr.fill()
 
-        # microfone simples desenhado a mao (sem depender de fonte com emoji)
+        # microfone simples desenhado a mão (sem depender de fonte com emoji)
         cr.set_source_rgba(0.12, 0.12, 0.18, 0.9)
         cr.set_line_width(2.2)
         cr.rectangle(cx - 4, cy - 10, 8, 13)
@@ -120,7 +120,7 @@ class Overlay(Gtk.Window):
 
 
 def receiving_audio():
-    """As medicoes de volume ainda estao chegando da pagina?"""
+    """As medições de volume ainda estão chegando da página?"""
     return (time.monotonic() - state["last_level_at"]) < SILENCE_ALERT_S
 
 
@@ -139,13 +139,13 @@ def apply_state(win, name, error=False):
     state["name"] = name
     state["error"] = error
     if name == "recording":
-        # comeca do zero e da um tempo antes de acusar falta de audio
+        # começa do zero e da um tempo antes de acusar falta de áudio
         state["level"] = 0.0
         state["smooth"] = 0.0
         state["last_level_at"] = time.monotonic()
         win.show_all()
     else:
-        # some assim que a gravacao para, antes de o texto ser colado
+        # some assim que a gravação para, antes de o texto ser colado
         win.hide()
     win.area.queue_draw()
     return False

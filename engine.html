@@ -23,33 +23,33 @@
 <script>
 /*
  * Motor de reconhecimento de fala. Roda numa janela escondida do Chrome — a
- * interface visivel e o overlay em GTK. Quem manda aqui e o bridge, por SSE:
- * este arquivo nao tem botao nem atalho proprio.
+ * interface visível e o overlay em GTK. Quem manda aqui e o bridge, por SSE:
+ * este arquivo não tem botão nem atalho próprio.
  */
 const stateEl = document.getElementById('state');
 const detailEl = document.getElementById('detail');
 
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-let shouldRecord = false;   // o usuario quer estar gravando agora?
+let shouldRecord = false;   // o usuário quer estar gravando agora?
 let recognition = null;
 let finalText = '';         // acumulado durante o ciclo inteiro, atravessa reinicios
 let restarts = 0;
 
 // Config vem do bridge por SSE e pode mudar no meio do caminho (painel aberto
-// em outra aba), entao e sempre lida na hora de comecar a gravar.
+// em outra aba), então e sempre lida na hora de começar a gravar.
 let config = { engine: 'chrome', language: 'pt-BR' };
 
-// --- gravacao pra OpenAI ------------------------------------------------
-// No modo OpenAI quem reconhece nao e o navegador: aqui so gravamos o audio e
+// --- gravação pra OpenAI ------------------------------------------------
+// No modo OpenAI quem reconhece não e o navegador: aqui só gravamos o áudio e
 // entregamos os bytes pro bridge, que fala com a API (a chave nunca vem pra ca).
 let recorder = null;
 let recordedChunks = [];
 
-// --- medicao do volume do microfone ------------------------------------
-// O reconhecimento do Chrome nao expoe o nivel do audio, entao abrimos um
-// stream proprio so pra medir. E o que faz a bolinha reagir a voz de verdade
-// em vez de piscar sozinha — sem isso nao da pra saber se o microfone pegou.
+// --- medição do volume do microfone ------------------------------------
+// O reconhecimento do Chrome não expoe o nível do áudio, então abrimos um
+// stream próprio só pra medir. E o que faz a bolinha reagir a voz de verdade
+// em vez de piscar sozinha — sem isso não da pra saber se o microfone pegou.
 let audioContext = null;
 let audioStream = null;
 let levelTimer = null;
@@ -77,7 +77,7 @@ async function startLevelMeter() {
       navigator.sendBeacon('/level', JSON.stringify({ level }));
     }, 100);
   } catch (err) {
-    report(`nao consegui medir o nivel do audio: ${err.message}`, 'error');
+    report(`não consegui medir o nível do áudio: ${err.message}`, 'error');
   }
 }
 
@@ -109,7 +109,7 @@ function sendText(text) {
 
 function startRecognition() {
   if (!SpeechRecognition) {
-    report('este navegador nao reconhece fala; escolha o motor OpenAI', 'error');
+    report('este navegador não reconhece fala; escolha o motor OpenAI', 'error');
     shouldRecord = false;
     return;
   }
@@ -125,16 +125,16 @@ function startRecognition() {
     if (finalText) report(`ouvido: ${finalText}`);
   };
 
-  // Erros que nao adianta tentar de novo: sem eles o onend reiniciaria em loop
+  // Erros que não adianta tentar de novo: sem eles o onend reiniciaria em loop
   // apertado, enchendo o log e martelando o microfone.
   const FATAL = {
-    'not-allowed': 'permissao de microfone negada',
-    'service-not-allowed': 'servico de fala bloqueado',
-    'audio-capture': 'nenhum microfone disponivel',
+    'not-allowed': 'permissão de microfone negada',
+    'service-not-allowed': 'serviço de fala bloqueado',
+    'audio-capture': 'nenhum microfone disponível',
   };
 
   recognition.onerror = (ev) => {
-    // 'no-speech' e 'aborted' sao rotina: o motor corta sozinho no silencio e
+    // 'no-speech' e 'aborted' são rotina: o motor corta sozinho no silêncio e
     // o onend logo abaixo reinicia.
     if (ev.error === 'no-speech' || ev.error === 'aborted') return;
     if (FATAL[ev.error]) {
@@ -151,11 +151,11 @@ function startRecognition() {
       finishCycle();
       return;
     }
-    // O Chrome encerra a sessao sozinho depois de um tanto de silencio. Como o
-    // usuario ainda nao mandou parar, reabre e segue acumulando no mesmo texto.
+    // O Chrome encerra a sessão sozinho depois de um tanto de silêncio. Como o
+    // usuário ainda não mandou parar, reabre e segue acumulando no mesmo texto.
     restarts++;
     if (restarts > 60) {
-      report('reinicios demais — desistindo do ciclo', 'error');
+      report('reinícios demais, desistindo do ciclo', 'error');
       shouldRecord = false;
       finishCycle();
       return;
@@ -167,7 +167,7 @@ function startRecognition() {
     recognition.start();
     stateEl.textContent = 'ouvindo';
   } catch (err) {
-    report(`nao consegui iniciar: ${err.message}`, 'error');
+    report(`não consegui iniciar: ${err.message}`, 'error');
   }
 }
 
@@ -197,7 +197,7 @@ async function startRecorder() {
     recorder.start();
     stateEl.textContent = 'gravando (OpenAI)';
   } catch (err) {
-    report(`nao consegui gravar: ${err.message}`, 'error');
+    report(`não consegui gravar: ${err.message}`, 'error');
     shouldRecord = false;
   }
 }
@@ -208,7 +208,7 @@ function sendAudio() {
   stateEl.textContent = 'parado';
 
   if (blob.size < 1000) {
-    report('gravacao curta demais — nada pra transcrever');
+    report('gravação curta demais, nada pra transcrever');
     fetch('/type', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -219,7 +219,7 @@ function sendAudio() {
 
   report(`mandando ${Math.round(blob.size / 1024)} KB pra OpenAI`);
   fetch('/transcribe', { method: 'POST', headers: { 'Content-Type': blob.type }, body: blob })
-    .catch((err) => report(`falha ao enviar audio: ${err.message}`, 'error'));
+    .catch((err) => report(`falha ao enviar áudio: ${err.message}`, 'error'));
 }
 
 function onStart() {
@@ -268,12 +268,12 @@ events.addEventListener('config', (ev) => {
 events.onopen = () => {
   stateEl.textContent = 'parado';
   if (!SpeechRecognition) {
-    report('este navegador nao tem Web Speech API — so o motor OpenAI funciona', 'error');
+    report('este navegador não tem Web Speech API; só o motor OpenAI funciona', 'error');
   } else {
     report('motor pronto');
   }
 };
-events.onerror = () => { stateEl.textContent = 'sem conexao com a ponte'; };
+events.onerror = () => { stateEl.textContent = 'sem conexão com a ponte'; };
 </script>
 </body>
 </html>

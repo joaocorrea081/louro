@@ -1,6 +1,6 @@
 // Louro — mantem a janela do motor de reconhecimento fora da vista.
 //
-// O Chrome so existe aqui como motor de fala; quem aparece pro usuario e a
+// O Chrome só existe aqui como motor de fala; quem aparece pro usuário e a
 // bolinha. Esta janela fica minimizada e sumida da barra de tarefas, do
 // alternador (Alt+Tab) e do pager.
 //
@@ -24,7 +24,7 @@ function hideEngine(window) {
 const existing = workspace.windowList ? workspace.windowList() : workspace.clientList();
 for (const window of existing) hideEngine(window);
 
-// o motor pode ser reiniciado depois; pega a janela nova tambem
+// o motor pode ser reiniciado depois; pega a janela nova também
 if (workspace.windowAdded) {
   workspace.windowAdded.connect(hideEngine);
 } else if (workspace.clientAdded) {

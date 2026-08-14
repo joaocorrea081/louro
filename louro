@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Louro — atalho pros servicos do ditado por voz.
+# Louro — atalho pros serviços do ditado por voz.
 #
 #   ponte   (node bridge.js)  coordena tudo e cola o texto no app em foco
 #   motor   (Chrome)          reconhecimento de fala, janela escondida pelo KWin
-#   bolinha (python)          o indicador que aparece enquanto voce fala
+#   bolinha (python)          o indicador que aparece enquanto você fala
 #
 # Quem supervisiona de verdade e o systemd --user: se qualquer peca cair, ela
-# volta sozinha. Este script so evita ter que digitar tres systemctl.
+# volta sozinha. Este script só evita ter que digitar três systemctl.
 
 set -uo pipefail
 
@@ -45,7 +45,7 @@ case "${1:-config}" in
 
   config)
     if ! curl -sf -m 2 "$URL/state" >/dev/null 2>&1; then
-      echo "louro: precisa estar no ar pra abrir a configuracao (louro start)" >&2
+      echo "louro: precisa estar no ar pra abrir a configuração (louro start)" >&2
       exit 1
     fi
     echo "abrindo $URL/config"
@@ -57,10 +57,10 @@ case "${1:-config}" in
 uso: louro <comando>
 
   start | stop | restart   liga, desliga, reinicia
-  status                   mostra se as tres pecas estao de pe
-  config                   abre a configuracao no navegador
-  logs [n]                 ultimas linhas (o que foi ouvido e colado)
-  enable | disable         subir ou nao no login
+  status                   mostra se as três peças estão de pé
+  config                   abre a configuração no navegador
+  logs [n]                 últimas linhas (o que foi ouvido e colado)
+  enable | disable         subir ou não no login
 EOF
     exit 1
     ;;

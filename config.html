@@ -219,7 +219,7 @@ const aviso = document.getElementById('aviso');
 const apiKey = document.getElementById('apiKey');
 
 // A chave nunca chega aqui — o servidor só conta se existe uma guardada. O
-// campo fica com um marcador e, se o usuario nao mexer, nao mandamos nada e a
+// campo fica com um marcador e, se o usuário não mexer, não mandamos nada e a
 // chave salva continua intacta.
 const MARCADOR = '••••••••••••••••';
 let tinhaChave = false;
@@ -254,7 +254,7 @@ form.addEventListener('submit', async (ev) => {
     vocabulary: document.getElementById('vocabulary').value,
   };
 
-  // so manda a chave se o usuario digitou algo diferente do marcador
+  // só manda a chave se o usuário digitou algo diferente do marcador
   if (!(tinhaChave && apiKey.value === MARCADOR)) {
     corpo.openaiApiKey = apiKey.value;
   }
@@ -291,7 +291,7 @@ carregar().catch(() => {
   aviso.className = 'erro';
 });
 
-// --- saude e historico, atualizados sozinhos ---------------------------
+// --- saúde e histórico, atualizados sozinhos ---------------------------
 const bolinha = document.getElementById('bolinha');
 const saudeTexto = document.getElementById('saude-texto');
 const historico = document.getElementById('historico');
@@ -314,7 +314,7 @@ async function atualizar() {
 
     const { history } = await (await fetch('/api/history')).json();
     if (!history.length) {
-      historico.innerHTML = '<li class="vazio">nada ainda — aperte o atalho e fale</li>';
+      historico.innerHTML = '<li class="vazio">nada ainda, aperte o atalho e fale</li>';
       return;
     }
     historico.innerHTML = history

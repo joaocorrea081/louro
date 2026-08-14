@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Louro — desinstalador. Tira tudo que o install.sh colocou.
 #
-#   ./uninstall.sh          mantem o perfil do Chrome (permissao de microfone)
-#   ./uninstall.sh --tudo   apaga o perfil tambem
+#   ./uninstall.sh          mantem o perfil do Chrome (permissão de microfone)
+#   ./uninstall.sh --tudo   apaga o perfil também
 
 set -uo pipefail
 
@@ -18,7 +18,7 @@ echo "Desinstalando o Louro..."
 systemctl --user disable --now louro-bridge louro-engine louro-overlay >/dev/null 2>&1
 rm -f "$HOME/.config/systemd/user"/louro-{bridge,engine,overlay}.service
 systemctl --user daemon-reload
-echo "  servicos removidos"
+echo "  serviços removidos"
 
 rm -f "$HOME/.local/share/applications/$DESKTOP_FILE"
 kwriteconfig6 --file kglobalshortcutsrc \
@@ -43,4 +43,4 @@ else
 fi
 
 echo
-echo "Pronto. Os arquivos do projeto continuam onde estao — apague a pasta se quiser."
+echo "Pronto. Os arquivos do projeto continuam onde estão. Apague a pasta se quiser."
