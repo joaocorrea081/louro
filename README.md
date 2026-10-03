@@ -1,91 +1,95 @@
+> 🇧🇷 [Leia em português](README.pt-BR.md)
+
 # Louro
 
-Ditado por voz de graça no Linux. Aperta o atalho, fala à vontade, o texto cai
-onde o cursor estiver: terminal, navegador, editor, campo de formulário.
+Free voice dictation on Linux. Press the shortcut, speak as long as you want,
+and the text lands wherever your cursor is: terminal, browser, editor, any
+form field.
 
-Louro é o papagaio: você fala, ele repete.
+Louro is the parrot: you speak, it repeats.
 
 ```
-Ctrl+Space  ->  ● bolinha verde aparece, pode falar
-Ctrl+Space  ->  a bolinha some e o texto aparece onde você estava
+Ctrl+Space  ->  ● a green dot appears, start talking
+Ctrl+Space  ->  the dot disappears and the text shows up where you were
 ```
 
-## Por que isso existe
+## Why this exists
 
-Ditado por voz bom, hoje, cobra por minuto ou pesa na máquina.
+Good voice dictation today either charges by the minute or weighs your machine
+down.
 
-As opções que existem caem em dois grupos. Umas mandam o áudio pra uma API paga
-(OpenAI, Google Cloud, Deepgram): funcionam bem, mas você fica olhando o
-contador enquanto fala, e falar é justamente o que você quer fazer à vontade.
-Outras rodam o modelo na sua máquina (Whisper, Vosk): não custam nada por uso,
-mas exigem baixar modelo de gigabytes e uma máquina com fôlego. Em computador
-modesto, ou demora, ou erra.
+The existing options fall into two groups. Some send your audio to a paid API
+(OpenAI, Google Cloud, Deepgram): they work well, but you watch a meter run
+while you talk, and talking freely is the whole point. Others run the model on
+your machine (Whisper, Vosk): nothing per use, but you download gigabytes of
+model and need a machine with muscle. On a modest computer it is either slow
+or wrong.
 
-Eu queria as duas coisas: não gastar nada e poder falar sem cronômetro.
+I wanted both things: pay nothing and speak without a stopwatch.
 
-A saída estava aberta na tela o tempo todo, no navegador. O reconhecimento de
-voz do Chrome (o mesmo que roda no ditado do Google Docs) é gratuito, ilimitado
-e entende português muito bem. Ele já está instalado, já funciona, e ninguém
-estava usando isso fora de uma aba de navegador.
+The way out was sitting on the screen the whole time, inside the browser.
+Chrome's speech recognition (the same engine behind Google Docs dictation) is
+free, unlimited, and understands Portuguese very well. It is already
+installed, it already works, and nobody was using it outside a browser tab.
 
-O Louro é a ponte: o Chrome vira um motor de fala rodando escondido, e o texto
-que ele reconhece é entregue no aplicativo que você estiver usando. Você não
-precisa de chave de API, mensalidade, modelo pra baixar nem placa de vídeo.
+Louro is the bridge: Chrome becomes a speech engine running hidden, and the
+text it recognizes is delivered to whatever application you are using. No API
+key, no subscription, no model to download, no GPU.
 
-## A troca (leia antes de instalar)
+## The trade-off (read before installing)
 
-Seu áudio vai pros servidores do Google. É assim que o reconhecimento do Chrome
-funciona, igual ao que acontece quando você usa o ditado do Google Docs.
+Your audio goes to Google's servers. That is how Chrome's recognition works,
+the same as when you dictate in Google Docs.
 
-Se você precisa de ditado que não sai da sua máquina, o Louro não serve pra
-você. Use [nerd-dictation](https://github.com/ideasman42/nerd-dictation) (Vosk)
-ou [Whispering](https://github.com/epicenter-md/epicenter) (Whisper local). São
-bons e resolvem esse caso.
+If you need dictation that never leaves your machine, Louro is not for you.
+Use [nerd-dictation](https://github.com/ideasman42/nerd-dictation) (Vosk) or
+[Whispering](https://github.com/epicenter-md/epicenter) (local Whisper). They
+are good and they solve that case.
 
-O Louro é pra quem quer ditar de graça, sem limite de tempo, em máquina
-qualquer, e não se incomoda com isso.
+Louro is for people who want to dictate for free, with no time limit, on any
+machine, and are fine with that trade.
 
-## Dois motores, você escolhe
+## Two engines, you choose
 
-| | Chrome (padrão) | OpenAI |
+| | Chrome (default) | OpenAI |
 |---|---|---|
-| Custo | nada | a partir de US$ 0,003 por minuto, direto com eles |
-| Chave | não precisa | a sua |
-| Pontuação e maiúsculas | não põe | põe sozinho |
-| Acerta jargão em inglês | erra às vezes | bem melhor |
-| Áudio vai para | Google | OpenAI |
+| Cost | nothing | from US$ 0.003 per minute, paid directly to them |
+| API key | not needed | your own |
+| Punctuation and capitalization | none | handled for you |
+| English jargon accuracy | misses sometimes | much better |
+| Audio goes to | Google | OpenAI |
 
-A mesma frase, ditada nos dois:
+The same sentence, dictated on both:
 
 ```
-Chrome   o pássaro voa até a montanha com emoção e gratidão
-OpenAI   O pássaro voou até a montanha com emoção e gratidão.
+Chrome   the bird flies to the mountain with emotion and gratitude
+OpenAI   The bird flew to the mountain, with emotion and gratitude.
 ```
 
-A pontuação costuma pesar mais que a precisão no dia a dia: com o Chrome você
-dita e depois volta pra pôr as vírgulas e os pontos.
+In daily use, punctuation tends to matter more than raw accuracy: with Chrome
+you dictate and then go back to add the commas and periods.
 
-Modelos disponíveis no painel, do mais recomendado ao mais antigo:
+Models available in the panel, from most recommended to oldest:
 
-| Modelo | Custo/min | Observação |
+| Model | Cost/min | Note |
 |---|---|---|
-| `gpt-transcribe` | US$ 0,0045 | o mais novo (jul/2026) e o padrão daqui |
-| `gpt-4o-mini-transcribe` | US$ 0,003 | o mais barato |
-| `gpt-4o-transcribe` | US$ 0,006 | geração anterior |
-| `whisper-1` | US$ 0,006 | o antigo, erra bem mais |
+| `gpt-transcribe` | US$ 0.0045 | the newest (Jul 2026) and the default here |
+| `gpt-4o-mini-transcribe` | US$ 0.003 | the cheapest |
+| `gpt-4o-transcribe` | US$ 0.006 | previous generation |
+| `whisper-1` | US$ 0.006 | the old one, misses a lot more |
 
-Abra a configuração com `louro`: dá pra trocar o motor, colar a chave da OpenAI
-e escolher o idioma. A chave fica só na sua máquina, num arquivo que só você lê
-(`~/.config/louro/config.json`, permissão 600). Quem conversa com a OpenAI é o
-serviço local, então ela nunca é entregue ao navegador.
+Open the settings with `louro`: you can switch engines, paste your OpenAI key
+and pick the language. The key stays on your machine, in a file only you can
+read (`~/.config/louro/config.json`, permission 600). The local service is the
+one that talks to OpenAI, so the key is never handed to the browser.
 
-Ditar uma hora inteira no modelo mais caro sai por volta de US$ 0,36. Para uso
-normal, some no fim do mês.
+A full hour of dictation on the most expensive model costs around US$ 0.36.
+For normal use, it disappears into the month.
 
-## Instalação
+## Installation
 
-Precisa de KDE Plasma 6 no Wayland e do Google Chrome. O Chromium não serve
-porque não traz a chave do serviço de fala do Google.
+Requires KDE Plasma 6 on Wayland and Google Chrome. Chromium does not work
+because it does not ship the key for Google's speech service.
 
 ```bash
 git clone https://github.com/joaocorrea081/louro.git
@@ -93,154 +97,161 @@ cd louro
 ./install.sh
 ```
 
-O instalador confere as dependências e diz o que falta antes de mexer em
-qualquer coisa. Não pede sudo, instala tudo no seu usuário.
+The installer checks the dependencies and tells you what is missing before
+touching anything. It does not ask for sudo and installs everything under your
+user.
 
-Pra usar outro atalho:
+To use a different shortcut:
 
 ```bash
 ./install.sh --atalho "Meta+V"
 ```
 
-Desinstalar:
+Uninstall:
 
 ```bash
 ./uninstall.sh
 ```
 
-### Dependências
+### Dependencies
 
-| Distro | Comando |
+| Distro | Command |
 |---|---|
 | Arch/Manjaro | `sudo pacman -S nodejs python-gobject python-cairo gtk-layer-shell ydotool wl-clipboard curl` |
 | Debian/Ubuntu | `sudo apt install nodejs python3-gi python3-cairo gir1.2-gtklayershell-0.1 ydotool wl-clipboard curl` |
 | Fedora | `sudo dnf install nodejs python3-gobject python3-cairo gtk-layer-shell ydotool wl-clipboard curl` |
 
-O `ydotool` precisa do módulo `uinput` e do daemon ligado:
+`ydotool` needs the `uinput` module and its daemon running:
 
 ```bash
 sudo modprobe uinput
-echo uinput | sudo tee /etc/modules-load.d/uinput.conf   # pros próximos boots
+echo uinput | sudo tee /etc/modules-load.d/uinput.conf   # for the next boots
 systemctl --user enable --now ydotool
 ```
 
-## Uso
+## Usage
 
-Depois de instalado, sobe sozinho no login. Não tem janela pra abrir: é o atalho
-e a bolinha.
+After installing, it starts on login by itself. There is no window to open: it
+is the shortcut and the dot.
 
 ```bash
-louro            # abre o painel, onde se faz tudo
-louro status     # as três peças estão de pé?
-louro logs       # o que foi ouvido e colado
+louro            # opens the panel, where everything is done
+louro status     # are the three pieces up?
+louro logs       # what was heard and pasted
 louro restart
-louro disable    # parar de subir no login
+louro disable    # stop starting on login
 ```
 
-Digitar `louro` sozinho abre o painel de propósito. É um programa que você usa
-por atalho, então decorar subcomando pra mexer nele iria contra a ideia. O painel
-mostra se está tudo de pé e os últimos ditados, e é ali que você descobre quais
-palavras ele erra sempre pra acrescentar no vocabulário.
+Typing `louro` alone opens the panel on purpose. This is a program you use
+through a shortcut, so memorizing subcommands to manage it would go against
+the idea. The panel shows whether everything is up and the latest dictations,
+and it is where you find out which words it always gets wrong so you can add
+them to the vocabulary.
 
-Pra trocar o atalho depois de instalado: Configurações do Sistema, Atalhos,
-Atalhos Personalizados, "Louro". Ou rode o `install.sh --atalho` de novo.
+To change the shortcut after installing: System Settings, Shortcuts, Custom
+Shortcuts, "Louro". Or run `install.sh --atalho` again.
 
-## Como funciona
+## How it works
 
-Três peças pequenas:
+Three small pieces:
 
-| Peça | Arquivo | O que faz |
+| Piece | File | What it does |
 |---|---|---|
-| ponte | `bridge.js` | servidor local (porta 8765): coordena o ciclo e cola o texto |
-| motor | Chrome | reconhece a fala numa janela escondida; a página é `engine.html` |
-| bolinha | `overlay.py` | o indicador visual enquanto você fala |
-| painel | `config.html` | a configuração, servida pela própria ponte |
+| bridge | `bridge.js` | local server (port 8765): coordinates the cycle and pastes the text |
+| engine | Chrome | recognizes speech in a hidden window; the page is `engine.html` |
+| dot | `overlay.py` | the visual indicator while you speak |
+| panel | `config.html` | the settings, served by the bridge itself |
 
-No modo OpenAI o Chrome deixa de reconhecer e passa só a gravar: a página manda
-os bytes do áudio para a ponte, que faz o upload para a API. É por isso que a
-chave nunca precisa existir dentro do navegador.
+In OpenAI mode, Chrome stops recognizing and only records: the page sends the
+audio bytes to the bridge, which uploads them to the API. That is why the key
+never needs to exist inside the browser.
 
 ```
-Ctrl+Space -> POST /toggle -> SSE "start" -> Chrome ouve + bolinha aparece
-Ctrl+Space -> POST /toggle -> SSE "stop"  -> bolinha some na hora
-           -> Chrome devolve o texto em POST /type -> ponte cola no app em foco
+Ctrl+Space -> POST /toggle -> SSE "start" -> Chrome listens + the dot appears
+Ctrl+Space -> POST /toggle -> SSE "stop"  -> the dot disappears immediately
+           -> Chrome returns the text via POST /type -> bridge pastes into the focused app
 ```
 
-### Decisões que não são óbvias
+### Decisions that are not obvious
 
-Por que o texto vai pelo clipboard e não é digitado?
+Why does the text go through the clipboard instead of being typed?
 
-`ydotool type` ignora todo caractere fora do ASCII, então "Ação, coração"
-chegava como "Ao, corao". E `wtype`, que resolveria, não funciona aqui: o KWin
-expõe só `zwp_input_method_v1`, não o `zwp_virtual_keyboard_manager_v1` que o
-wtype exige. Sobrou clipboard mais `Shift+Insert`, que preserva os acentos e
-funciona em GTK, Qt e terminais.
+`ydotool type` drops every character outside ASCII, so "Ação, coração" arrived
+as "Ao, corao". And `wtype`, which would solve it, does not work here: KWin
+only exposes `zwp_input_method_v1`, not the `zwp_virtual_keyboard_manager_v1`
+that wtype requires. What remained was clipboard plus `Shift+Insert`, which
+preserves accents and works in GTK, Qt and terminals.
 
-O texto é escrito nas duas áreas de transferência: o clipboard e a primary
-selection (o que você marca com o mouse). Campos GTK e Qt leem o Shift+Insert do
-clipboard, mas vários terminais leem da primary. Preenchendo só uma, o terminal
-colava a última coisa selecionada em vez da fala.
+The text is written to both buffers: the clipboard and the primary selection
+(what you highlight with the mouse). GTK and Qt fields read `Shift+Insert`
+from the clipboard, but several terminals read from the primary. Filling only
+one, the terminal pasted the last thing selected instead of the speech.
 
-Efeito colateral aceito: o texto ditado sobrescreve as duas áreas. Isso também
-serve de rede de segurança, porque se a colagem falhar é só colar na mão.
+Accepted side effect: dictated text overwrites both buffers. That also works
+as a safety net, because if the paste fails you can just paste by hand.
 
-Por que a bolinha é GTK e não uma janela do Chrome?
+Why is the dot GTK and not a Chrome window?
 
-Ela usa `gtk-layer-shell` na camada OVERLAY com `KeyboardMode.NONE`, então fica
-acima de tudo e nunca aceita foco de teclado. Por isso o aplicativo onde você
-está não perde o foco em momento nenhum, e o texto cai no lugar certo. Uma
-janela do Chrome roubaria o foco.
+It uses `gtk-layer-shell` on the OVERLAY layer with `KeyboardMode.NONE`, so it
+sits above everything and never accepts keyboard focus. That is why the
+application you are in never loses focus, and the text lands in the right
+place. A Chrome window would steal the focus.
 
-Por que o Chrome nasce escondido?
+Why is Chrome born hidden?
 
-Por uma regra do KWin chamada `louro-engine-hidden`, que casa com
-`wmclass=chrome-127.0.0.1` e pega só a janela do Louro, não o seu Chrome
-pessoal. As flags `--disable-backgrounding-occluded-windows`,
-`--disable-renderer-backgrounding` e `--disable-background-timer-throttling`
-impedem o Chrome de suspender a página por estar minimizada. Sem elas o
-reconhecimento morre em segundo plano.
+Through a KWin rule called `louro-engine-hidden`, which matches
+`wmclass=chrome-127.0.0.1` and catches only Louro's window, not your personal
+Chrome. The flags `--disable-backgrounding-occluded-windows`,
+`--disable-renderer-backgrounding` and `--disable-background-timer-throttling`
+keep Chrome from suspending the page for being minimized. Without them the
+recognition dies in the background.
 
-A bolinha reage à sua voz: o halo cresce conforme o volume que está entrando no
-microfone. Isso serve pra você descobrir que o microfone está mudo ou no
-dispositivo errado. Bolinha parada enquanto você fala significa que nada está
-sendo captado, e se ela ficar vermelha o áudio parou de chegar.
+The dot reacts to your voice: the halo grows with the volume reaching the
+microphone. That is how you discover the microphone is muted or set to the
+wrong device. A still dot while you speak means nothing is being captured, and
+if it turns red the audio stopped arriving.
 
-Ditados longos: o Chrome encerra a sessão de reconhecimento sozinho depois de um
-tanto de silêncio. A página reabre e continua acumulando no mesmo texto, então
-falar com pausas não corta a frase.
+Long dictations: Chrome ends the recognition session on its own after a
+stretch of silence. The page reopens and keeps accumulating into the same
+text, so speaking with pauses does not cut the sentence.
 
-Permissão de microfone: gravada uma vez no perfil dedicado
-(`~/.local/share/louro-chrome`), liberada só pra `http://127.0.0.1:8765`.
+Microphone permission: granted once in the dedicated profile
+(`~/.local/share/louro-chrome`), allowed only for `http://127.0.0.1:8765`.
 
-## Quando dá problema
+## When something breaks
 
 ```bash
-louro status    # alguma peça caiu?
-louro logs      # o log mostra erro de reconhecimento?
+louro status    # did a piece go down?
+louro logs      # does the log show a recognition error?
 ```
 
-| Sintoma | Causa provável |
+| Symptom | Likely cause |
 |---|---|
-| "nenhum microfone disponivel" | o Chrome recusa *monitor* de sink como microfone; veja `pactl get-default-source` |
-| transcreve mas não cola | `systemctl --user status ydotool` e `lsmod \| grep uinput` |
-| cola o texto errado | outra coisa reescreveu o clipboard entre falar e colar |
-| a janela do Chrome apareceu | `busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure` |
-| nada acontece no atalho | outro programa pode ter tomado a tecla; troque nas Configurações do Sistema |
+| "no microphone available" | Chrome refuses a sink *monitor* as microphone; check `pactl get-default-source` |
+| transcribes but does not paste | `systemctl --user status ydotool` and `lsmod \| grep uinput` |
+| pastes the wrong text | something else rewrote the clipboard between speaking and pasting |
+| the Chrome window showed up | `busctl --user call org.kde.KWin /KWin org.kde.KWin reconfigure` |
+| nothing happens on the shortcut | another program may own the key; change it in System Settings |
 
-Pra depurar o motor, abra `http://127.0.0.1:8765` no seu Chrome normal. A página
-mostra o estado e o último texto ouvido.
+To debug the engine, open `http://127.0.0.1:8765` in your normal Chrome. The
+page shows the state and the last recognized text.
 
-## Limites conhecidos
+## Known limits
 
-- Só KDE Plasma 6 no Wayland. GNOME, XFCE e X11 precisariam de outro jeito de
-  fazer a bolinha e o atalho global.
-- Só Chrome oficial. O Chromium não tem a chave do serviço de fala.
-- Depende de uma API que não é contrato público. Se o Google mudar o
-  reconhecimento do Chrome, quebra, e não há o que fazer do lado de cá.
-- Erra jargão técnico em inglês no meio do português ("login" vira "alguém").
-  A Web Speech API não aceita dicionário nem contexto, mas no motor da OpenAI
-  dá pra listar essas palavras no painel.
+- KDE Plasma 6 on Wayland only. GNOME, XFCE and X11 would need another way to
+  draw the dot and register the global shortcut.
+- Official Chrome only. Chromium does not carry the key for the speech
+  service.
+- It depends on an API that is not a public contract. If Google changes
+  Chrome's recognition, it breaks, and there is nothing to do on this side.
+- It misses English technical jargon in the middle of Portuguese ("login"
+  becomes "alguém"). The Web Speech API accepts no dictionary or context, but
+  on the OpenAI engine you can list those words in the panel.
 
-## Licença
+## License
 
-MIT, veja [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE).
+
+---
+
+Made by [João Batista](https://joaobatista.tech) · [LinkedIn](https://www.linkedin.com/in/jo%C3%A3o-batista-cj-7934a1113/)
